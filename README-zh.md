@@ -1,7 +1,7 @@
 # 功能介绍 ：完全基于jdk封装
 1. GET请求,不带参数
 
-2. proxy 代理,支持HTTP/HTTPS/FTP,SOCKET4/SOCKET5
+2. proxy 代理,支持HTTP/FTP,SOCKET4/SOCKET5
 
 3. 代理测试 [代理ip获取](https://fineproxy.org/cn/free-proxies/asia/china/)
 

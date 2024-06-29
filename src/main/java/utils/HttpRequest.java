@@ -3,30 +3,23 @@ package utils;
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.*;
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.Set;
 
-public class HttpRequest extends URLConnection {
+public class HttpRequest {
     private static HttpURLConnection httpURLConnection;
     private static HttpsURLConnection httpsURLConnection;
     private static URL url;
 
-    /**
-     * Constructs a URL connection to the specified URL. A connection to
-     * the object referenced by the URL is not created.
-     *
-     * @param url the specified URL.
-     */
-    protected HttpRequest(URL url) {
-        super(url);
-    }
+
 
     public static HttpRequest doGet(String baseUrl) {
-        HttpRequest httpRequest;
         try {
             url = new URL(baseUrl);
-            httpRequest = new HttpRequest(url);
             if (isHttp(url.getProtocol())) {
                 httpURLConnection = (HttpURLConnection) url.openConnection();
                 httpURLConnection.setRequestMethod("GET");
@@ -40,7 +33,7 @@ public class HttpRequest extends URLConnection {
             return null;
         }
 
-        return httpRequest;
+        return new HttpRequest();
     }
 
     public HttpRequest setProxy(Proxy proxy) throws IOException {
@@ -51,21 +44,45 @@ public class HttpRequest extends URLConnection {
         } else {
             throw new ProtocolException();
         }
-        return new HttpRequest(url);
+        return new HttpRequest();
     }
 
-    @Override
-    public void connect() throws IOException {
 
-    }
-
-    public void setReadTimeout(int readTimeOut) {
+    public HttpRequest setReadTimeout(int readTimeOut)  {
         if (isHttp(url.getProtocol())) {
-            httpsURLConnection.setReadTimeout(readTimeOut);
-
+            httpURLConnection.setReadTimeout(readTimeOut);
         } else if (isHttps(url.getProtocol())) {
             httpsURLConnection.setReadTimeout(readTimeOut);
         }
+
+        return new HttpRequest();
+    }
+    public HttpRequest setConnectionTimeout(int connectionTimeout){
+        if (isHttp(url.getProtocol())) {
+            httpURLConnection.setConnectTimeout(connectionTimeout);
+        } else if (isHttps(url.getProtocol())) {
+            httpsURLConnection.setConnectTimeout(connectionTimeout);
+
+        }
+
+        return new HttpRequest();
+    }
+    public HttpRequest setHeaders(Map<String,String>headers){
+        Set<String>keySet = headers.keySet();
+        if (isHttp(url.getProtocol())) {
+            for (String key:keySet
+                 ) {
+                httpURLConnection.setRequestProperty(key,headers.get(key));
+            }
+        } else if (isHttps(url.getProtocol())) {
+            for (String key:keySet
+            ) {
+                httpsURLConnection.setRequestProperty(key,headers.get(key));
+            }
+
+        }
+
+        return new HttpRequest();
     }
 
     private static Boolean isHttp(String baseUrl) {
@@ -90,27 +107,18 @@ public class HttpRequest extends URLConnection {
         }
     }
 
-    public String getResponse() {
+    public String getResponse() throws IOException {
         StringBuilder sb = new StringBuilder();
         String line;
-        URLConnection urlConnection = null;
-        if (httpURLConnection != null) {
-            urlConnection = httpURLConnection;
-        } else if (httpsURLConnection != null) {
-            urlConnection = httpsURLConnection;
-        }
-
-        assert urlConnection != null;
-        BufferedReader bis = null;
+        BufferedReader bis;
         try {
-            bis = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+            bis = new BufferedReader(new InputStreamReader(httpsURLConnection==null?httpURLConnection.getInputStream():httpsURLConnection.getInputStream()));
             while ((line = bis.readLine()) != null) {
                 line = new String(line.getBytes(), Charset.defaultCharset());
                 sb.append(line);
             }
-            bis.close();
-        } catch (IOException e) {
-
+        } catch (SocketException e) {
+            e.printStackTrace();
         }
         return sb.toString();
 
